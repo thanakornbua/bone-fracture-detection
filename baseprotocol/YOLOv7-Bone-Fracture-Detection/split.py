@@ -1,3 +1,7 @@
+#Note : This file is use to extract the data from the dataset and split it into train, test and validation set.
+#Based from normal and yolo format.
+#Author : Co-Authored
+#Classification : UnderTopSecret
 import os
 from textwrap import shorten
 import pandas as pd
