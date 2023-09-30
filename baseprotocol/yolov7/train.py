@@ -16,6 +16,7 @@ import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
 import torch.utils.data
 import yaml
+import logging 
 from torch.cuda import amp
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.tensorboard import SummaryWriter
@@ -37,13 +38,19 @@ from utils.wandb_logging.wandb_utils import WandbLogger, check_wandb_resume
 
 logger = logging.getLogger(__name__)
 
+#Initiate and config the logging system
+logging.basicConfig(filename=trainlog.txt,
+                    level=logging.INFO, 
+                    format= '%(asctime)s - %(name)s - %(levelname)s - %(messages)s',
+                     )
+logger = logging.getLogger(__name__)
 
 def train(hyp, opt, device, tb_writer=None):
     logger.info(colorstr('hyperparameters: ') + ', '.join(f'{k}={v}' for k, v in hyp.items()))
     save_dir, epochs, batch_size, total_batch_size, weights, rank, freeze = \
         Path(opt.save_dir), opt.epochs, opt.batch_size, opt.total_batch_size, opt.weights, opt.global_rank, opt.freeze
 
-    # Directories
+    # Directorie
     wdir = save_dir / 'weights'
     wdir.mkdir(parents=True, exist_ok=True)  # make dir
     last = wdir / 'last.pt'
@@ -290,6 +297,7 @@ def train(hyp, opt, device, tb_writer=None):
     model.names = names
 
     # Start training
+    logging.info("Start Training")
     t0 = time.time()
     nw = max(round(hyp['warmup_epochs'] * nb), 1000)  # number of warmup iterations, max(3 epochs, 1k iterations)
     # nw = min(nw, (epochs - start_epoch) / 2 * nb)  # limit warmup to < 1/2 of training
@@ -303,10 +311,15 @@ def train(hyp, opt, device, tb_writer=None):
                 f'Using {dataloader.num_workers} dataloader workers\n'
                 f'Logging results to {save_dir}\n'
                 f'Starting training for {epochs} epochs...')
+    #Seperated logging
+    logging.info(scheduler.last_epoch , f'Image sizes {imgsz} train, {imgsz_test} test\n'
+                f'Using {dataloader.num_workers} dataloader workers\n'
+                f'Logging results to {save_dir}\n'
+                f'Starting training for {epochs} epochs...' )
     torch.save(model, wdir / 'init.pt')
     for epoch in range(start_epoch, epochs):  # epoch ------------------------------------------------------------------
         model.train()
-
+        logging.info(f"Epoch {epoch}/{epochs-1}")
         # Update image weights (optional)
         if opt.image_weights:
             # Generate indices
@@ -336,11 +349,13 @@ def train(hyp, opt, device, tb_writer=None):
         for i, (imgs, targets, paths, _) in pbar:  # batch -------------------------------------------------------------
             ni = i + nb * epoch  # number integrated batches (since train start)
             imgs = imgs.to(device, non_blocking=True).float() / 255.0  # uint8 to float32, 0-255 to 0.0-1.0
-
+            logging.info(f"Batch {i}/{nb - 1} in epoch {epoch}/{epochs - 1}")
+            logging.info("GPU Memory Usage: %.3g GB" % (torch.cuda.memory_reserved() / 1E9))
             # Warmup
             if ni <= nw:
                 xi = [0, nw]  # x interp
                 # model.gr = np.interp(ni, xi, [0.0, 1.0])  # iou loss ratio (obj_loss = 1.0 or iou)
+                logging.info("GPU Memory Usage: %.3g GB" % (torch.cuda.memory_reserved() / 1E9))
                 accumulate = max(1, np.interp(ni, xi, [1, nbs / total_batch_size]).round())
                 for j, x in enumerate(optimizer.param_groups):
                     # bias lr falls from 0.1 to lr0, all other lrs rise from 0.0 to lr0

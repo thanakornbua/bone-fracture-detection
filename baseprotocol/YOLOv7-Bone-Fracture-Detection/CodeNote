@@ -1,0 +1,53 @@
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging = logging.getlogging(__name)
+
+# Training Progress
+logging.info("Start Training")
+for epoch in range(start_epoch, epochs):
+    logging.info(f"Epoch {epoch}/{epochs - 1}")
+    for i, (imgs, targets, paths, _) in pbar:
+        logging.info(f"Batch {i}/{nb - 1} in epoch {epoch}/{epochs - 1}")
+
+# Resource Usage
+logging.info("GPU Memory Usage: %.3g GB" % (torch.cuda.memory_reserved() / 1E9))
+
+# Losses and Metrics
+logging.info(f"Loss: {loss:.4f}")
+logging.info(f"Accuracy: {accuracy:.2%}")
+
+# Model Information
+logging.info("Model Architecture: \n%s" % model)
+
+# Data Handling
+logging.info("Data Loaded: %s" % dataset)
+
+# Hyperparameters
+logging.info(f"Learning Rate: {lr}")
+logging.info(f"Batch Size: {batch_size}")
+
+# Error Handling
+#try:
+    # Your code that might raise an exception
+#except Exception as e:
+#   logging.error("An error occurred: %s" % str(e), exc_info=True)
+
+# Results and Performance
+logging.info(f"Best Model Checkpoint Saved to {best_model_checkpoint}")
+logging.info(f"mAP: %.2f" % mAP)
+
+# Milestone Events
+logging.info("Logging to Tensorboard: %s" % tensorboard_log_dir)
+logging.info("Model Visualization Saved to %s" % model_visualization_dir)
+
+# Warnings and Information
+logging.warning("Warning: Model training is proceeding slowly.")
+logging.info("Information: Experiment complete.")
+
+
+#Full Tensorboard log
+logging.info("GPU Memory Usage : %.3g GB" % (torch.cuda.memory_reserved() / 1E9))
+logging.info(f"Loss: {loss:.4f}")
+logging.info(f"Accuracy: {accuracy}")
